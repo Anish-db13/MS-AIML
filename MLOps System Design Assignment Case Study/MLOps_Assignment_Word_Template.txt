@@ -1,0 +1,442 @@
+MLOps System Design Assignment: Demand Forecasting and Recommendations
+
+Student Name: Anish Dhondi
+Course: MS in AI/ML
+Date: December 14, 2025
+
+═══════════════════════════════════════════════════════════════════════════════
+
+TABLE OF CONTENTS
+
+1. System Design: Business KPIs .................................................... 3
+2. MLOps Advantages ................................................................ 5
+3. System Architecture ............................................................. 7
+4. Tool Selection Justification .................................................... 9
+5. Solution Workflow .............................................................. 11
+   5.1 Data and Model Experimentation ............................................. 11
+   5.2 Automation of Data Pipeline ................................................ 13
+   5.3 Automation of Training Pipeline ............................................ 15
+   5.4 Automation of Inference Pipeline ........................................... 17
+   5.5 Continuous Monitoring Pipeline ............................................. 19
+6. Special Scenarios .............................................................. 21
+   6.1 Drift Detection Handling ................................................... 21
+   6.2 New Annotated Data Handling ................................................ 23
+
+═══════════════════════════════════════════════════════════════════════════════
+
+EXECUTIVE SUMMARY
+
+This document presents a comprehensive MLOps system design for addressing the challenges faced by a leading retail e-commerce platform in delivering personalized recommendations and managing demand forecasting. The solution encompasses a complete production stack featuring automated data pipelines, model training and deployment, continuous monitoring, and adaptive learning capabilities.
+
+Key components include:
+• Real-time recommendation engine with collaborative and content-based filtering
+• Demand forecasting system using time series analysis and machine learning
+• Automated MLOps pipeline with experiment tracking and model versioning
+• Comprehensive monitoring and drift detection mechanisms
+• Scalable microservices architecture supporting millions of users
+
+The proposed system addresses the core business challenges of customer retention, personalization, and demand surge management while providing a robust, scalable, and maintainable production environment.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+1. SYSTEM DESIGN: BUSINESS KPIS
+
+The e-commerce platform should track the following Key Performance Indicators (KPIs) to measure the success of the ML system and ensure alignment with business objectives:
+
+1.1 RECOMMENDATION SYSTEM KPIs
+
+Primary Business Metrics:
+
+Click-Through Rate (CTR)
+• Definition: Percentage of users who click on recommended products
+• Target: >5% improvement from current baseline
+• Importance: Measures recommendation relevance and user engagement
+• Calculation: (Clicks on Recommendations / Recommendations Shown) × 100
+
+Conversion Rate
+• Definition: Percentage of recommendation clicks that result in purchases  
+• Target: >3% improvement from current baseline
+• Importance: Directly correlates to revenue generation
+• Calculation: (Purchases from Recommendations / Clicks on Recommendations) × 100
+
+Revenue Per User (RPU)
+• Definition: Average revenue generated per user through recommendations
+• Target: 15-20% increase from current baseline  
+• Importance: Measures financial impact of personalization
+• Calculation: Total Recommendation Revenue / Number of Active Users
+
+Customer Retention Rate
+• Definition: Percentage of customers who return within 30/90 days
+• Target: 10-15% improvement
+• Importance: Addresses the core business problem of losing customers
+• Calculation: (Returning Customers / Total Customers) × 100
+
+Engagement Metrics:
+
+Session Duration
+• Average time users spend on the platform after viewing recommendations
+• Target: 20% increase in session time
+• Impact: Higher engagement leads to more purchase opportunities
+
+Pages Per Session  
+• Number of product pages viewed per session
+• Target: 15% increase in page views
+• Impact: Indicates user interest and recommendation effectiveness
+
+Add-to-Cart Rate
+• Percentage of recommended products added to shopping cart
+• Target: 8-12% add-to-cart rate for recommendations
+• Impact: Strong indicator of purchase intent
+
+Cross-sell/Up-sell Rate
+• Success rate of recommending complementary or premium products
+• Target: 25% increase in cross-sell success
+• Impact: Increases average order value
+
+1.2 DEMAND FORECASTING KPIs
+
+Accuracy Metrics:
+
+Mean Absolute Percentage Error (MAPE)
+• Definition: Average percentage difference between predicted and actual demand
+• Target: <15% for seasonal products, <10% for regular products
+• Importance: Ensures inventory optimization and cost control
+• Calculation: Average of |Actual - Predicted|/Actual × 100
+
+Stockout Rate
+• Definition: Percentage of time products are out of stock
+• Target: <5% during normal periods, <10% during peak seasons  
+• Importance: Prevents revenue loss and customer dissatisfaction
+• Impact: Direct effect on customer experience and sales
+
+Inventory Turnover
+• Definition: How quickly inventory is sold and replaced
+• Target: 12-15 times per year for fashion products
+• Importance: Reduces holding costs and obsolescence
+• Calculation: Cost of Goods Sold / Average Inventory Value
+
+Forecast Accuracy by Category
+• Track accuracy across different product categories
+• Fashion items: Target MAPE <20% (high volatility)
+• Electronics: Target MAPE <10% (more predictable)
+• Seasonal items: Target MAPE <25% (during peak seasons)
+
+Operational Metrics:
+
+Demand Prediction Lead Time
+• Time between prediction and actual demand occurrence
+• Target: 7-14 days for inventory planning
+• Impact: Allows sufficient time for procurement and logistics
+
+Forecast Bias
+• Tendency to over-forecast or under-forecast demand
+• Target: Bias within ±5% of actual demand
+• Impact: Helps identify systematic forecasting errors
+
+Safety Stock Optimization
+• Reduction in excess inventory while maintaining service levels
+• Target: 20% reduction in safety stock without increasing stockouts
+• Impact: Reduces inventory costs and improves cash flow
+
+1.3 PLATFORM PERFORMANCE KPIs
+
+System Reliability:
+
+System Uptime
+• Platform availability during peak traffic periods
+• Target: 99.9% uptime during festivals/seasonal events
+• Importance: Prevents revenue loss during critical sales periods
+• Measurement: (Total Time - Downtime) / Total Time × 100
+
+API Response Time
+• Speed of recommendation and search API responses
+• Target: <200ms for recommendation API, <500ms for search
+• Importance: Ensures good user experience and reduces abandonment
+• Impact: Every 100ms delay can reduce conversions by 1%
+
+Error Rate
+• Percentage of failed API requests or system errors
+• Target: <0.1% error rate during normal operations
+• Impact: Affects user experience and system reliability
+
+Scalability Metrics:
+
+Peak Traffic Handling
+• Maximum concurrent users the system can support
+• Target: 10x normal traffic capacity during sales events
+• Measurement: Monitor CPU, memory, and response times under load
+
+Auto-scaling Efficiency  
+• Time taken to scale resources during traffic spikes
+• Target: <2 minutes to scale up/down based on demand
+• Impact: Maintains performance during sudden traffic changes
+
+Resource Utilization
+• Efficiency of computing resource usage
+• Target: 70-80% average CPU/memory utilization
+• Impact: Optimizes costs while maintaining performance
+
+Model Performance KPIs:
+
+Model Freshness
+• How recent the model's training data is
+• Target: Models retrained weekly, daily during peak seasons
+• Impact: Ensures recommendations reflect current trends
+
+Model Drift Detection
+• Changes in model performance over time
+• Target: Detect drift within 24 hours of occurrence
+• Action: Automatic alerts when performance drops >5%
+
+A/B Test Success Rate
+• Percentage of model updates that show improvement
+• Target: >60% of model updates show positive business impact
+• Impact: Validates the effectiveness of ML improvements
+
+Feature Engineering Performance
+• Quality and relevance of features used in models
+• Metrics: Feature importance scores, feature stability
+• Target: Top 20 features account for >80% of model performance
+
+1.4 BUSINESS IMPACT MEASUREMENT
+
+Revenue Attribution
+• Revenue directly attributable to ML recommendations
+• Target: 30-40% of total platform revenue from recommendations
+• Calculation: Track purchases with recommendation interaction history
+
+Customer Satisfaction Metrics
+• Net Promoter Score (NPS) improvement
+• Customer feedback ratings on recommendation quality
+• Target: 15% improvement in recommendation satisfaction scores
+
+Competitive Advantage
+• Market share retention and growth
+• Customer acquisition cost reduction
+• Customer lifetime value improvement
+
+Operational Efficiency
+• Reduction in manual inventory management tasks
+• Improved demand planning accuracy
+• Cost savings from optimized inventory levels
+
+These KPIs provide a comprehensive framework for measuring the success of the MLOps system from both technical and business perspectives, ensuring that the solution delivers tangible value to the organization.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+2. MLOPS ADVANTAGES
+
+Building an MLOps system provides significant advantages over deploying simple standalone models. Here's a comprehensive comparison highlighting why MLOps is essential for a production e-commerce platform:
+
+2.1 SCALABILITY AND AUTOMATION
+
+Simple Model Approach Limitations:
+• Manual model training and deployment processes
+• Limited to batch processing capabilities
+• Requires constant manual intervention for updates
+• Difficult to scale with business growth and increasing data volumes
+• No systematic approach to handle varying computational demands
+
+MLOps System Benefits:
+
+Automated End-to-End Pipelines
+• Complete automation from data ingestion to model deployment
+• Eliminates human error in repetitive tasks  
+• Reduces time-to-market for model updates from weeks to hours
+• Enables consistent and repeatable processes across environments
+
+Real-time and Batch Processing Capabilities
+• Handles both real-time recommendation requests and batch demand forecasting
+• Processes millions of user interactions per second
+• Supports different computational patterns for different use cases
+• Automatically adjusts processing based on data volume and urgency
+
+Auto-scaling Infrastructure  
+• Automatically adjusts computational resources based on demand
+• Scales horizontally during peak traffic (festivals, sales events)
+• Optimizes costs by scaling down during low-traffic periods
+• Maintains performance SLAs regardless of traffic variations
+
+Continuous Model Training
+• Models automatically retrain with new data as it becomes available
+• Incorporates user feedback and behavioral changes in real-time
+• Adapts to seasonal patterns and market trends automatically
+• Reduces model staleness and maintains prediction accuracy
+
+2.2 REPRODUCIBILITY AND VERSION CONTROL
+
+Simple Model Challenges:
+• Difficulty tracking model versions and changes
+• Inconsistent results across different environments (dev, staging, production)
+• Manual tracking of experiments leads to lost insights
+• No systematic way to recreate previous model states
+• Challenges in collaborating across different team members
+
+MLOps Solutions:
+
+Comprehensive Experiment Tracking
+• Complete history of all model experiments using MLflow and Weights & Biases
+• Tracks hyperparameters, metrics, code versions, and data used
+• Enables comparison of different model approaches and algorithms
+• Facilitates knowledge sharing across data science teams
+• Supports research and development decision-making
+
+Systematic Model Versioning
+• Every model version is tagged, tracked, and stored with metadata
+• Enables quick rollback to previous model versions if issues arise
+• Maintains lineage between models, data, and business outcomes
+• Supports A/B testing between different model versions
+• Provides audit trail for compliance and regulatory requirements
+
+Environment Consistency
+• Containerized deployments ensure identical environments across stages
+• Eliminates "works on my machine" problems
+• Standardized deployment procedures reduce deployment risks
+• Consistent dependency management across all environments
+• Infrastructure as Code ensures reproducible infrastructure setup
+
+Data Lineage and Governance
+• Tracks data sources, transformations, and quality metrics
+• Ensures compliance with data governance policies
+• Enables impact analysis when data sources change
+• Supports data quality monitoring and validation
+• Maintains audit trails for regulatory compliance
+
+2.3 MONITORING AND OBSERVABILITY
+
+Simple Model Limitations:
+• No automated performance monitoring capabilities
+• Manual detection of model degradation and data drift
+• Reactive approach to identifying and fixing issues
+• Limited visibility into model behavior in production
+• No systematic approach to quality assurance
+
+MLOps Capabilities:
+
+Real-time Performance Monitoring
+• Continuous tracking of model accuracy, precision, recall, and business metrics
+• Automated detection of performance degradation
+• Real-time dashboards showing model health and system performance
+• Monitoring of both technical metrics and business KPIs
+• Integration with alerting systems for immediate notification
+
+Automated Drift Detection
+• Statistical monitoring of input data distributions (data drift)
+• Detection of changes in model performance patterns (concept drift)
+• Automated comparison with baseline model performance
+• Proactive identification of when models need retraining
+• Reduces time between issue occurrence and detection
+
+Comprehensive Alerting Systems
+• Configurable alerts for different severity levels
+• Integration with communication platforms (Slack, email, PagerDuty)
+• Escalation procedures for critical issues
+• Context-aware notifications with relevant debugging information
+• Automated incident response for common issues
+
+Performance Dashboards and Analytics
+• Visual insights into model behavior and business impact
+• Historical trend analysis for model performance
+• Resource utilization monitoring and optimization recommendations
+• Business impact visualization (revenue attribution, user engagement)
+• Comparative analysis across different model versions
+
+2.4 BUSINESS VALUE AND RISK MANAGEMENT
+
+Simple Model Risks:
+• Single point of failure with no backup strategies
+• Inconsistent model performance affecting business outcomes
+• Delayed response to market changes and user behavior shifts
+• Higher long-term maintenance costs and technical debt
+• Limited ability to measure and optimize business impact
+
+MLOps Business Value:
+
+Faster Time-to-Market
+• Automated deployment pipelines reduce release cycles from weeks to days
+• Continuous integration and deployment enable rapid iteration
+• A/B testing frameworks allow safe experimentation with new models
+• Reduced manual bottlenecks in the model development lifecycle
+• Faster response to competitive pressures and market opportunities
+
+Improved Model Quality and Reliability
+• Systematic testing and validation processes ensure model quality
+• Automated quality gates prevent poor models from reaching production
+• Continuous monitoring ensures sustained model performance
+• Statistical validation and business logic testing reduce deployment risks
+• Standardized evaluation metrics enable objective model comparison
+
+Reduced Operational Risk
+• Automated rollback mechanisms minimize impact of model failures
+• Circuit breaker patterns prevent cascading failures
+• Redundancy and failover strategies ensure high availability
+• Comprehensive monitoring reduces mean time to detection and resolution
+• Standardized incident response procedures minimize business impact
+
+Cost Optimization
+• Efficient resource utilization through auto-scaling reduces infrastructure costs
+• Automated processes reduce manual labor costs
+• Faster issue resolution reduces operational overhead
+• Optimized model performance improves business outcomes and ROI
+• Reduced technical debt through standardized practices
+
+2.5 COLLABORATION AND GOVERNANCE
+
+Simple Model Challenges:
+• Siloed development processes limit knowledge sharing
+• Lack of collaboration between data scientists, engineers, and business teams
+• No systematic audit trails for compliance and governance
+• Difficulty meeting regulatory requirements for model explainability
+• Limited ability to share insights and best practices across teams
+
+MLOps Benefits:
+
+Enhanced Cross-functional Collaboration
+• Shared platforms enable collaboration between data scientists, ML engineers, and DevOps teams
+• Standardized processes facilitate communication and handoffs
+• Common tooling and practices reduce learning curve for team members
+• Centralized experiment and model repositories enable knowledge sharing
+• Collaborative model development and review processes
+
+Comprehensive Audit Trails
+• Complete tracking of all model decisions, changes, and deployments
+• Automated documentation of model development and deployment processes
+• Version control for models, code, data, and configurations
+• Compliance-ready documentation for regulatory requirements
+• Historical analysis capabilities for post-mortem and improvement
+
+Automated Governance Processes
+• Standardized approval workflows for model deployments
+• Automated compliance checking against organizational policies
+• Risk assessment automation for model changes
+• Standardized documentation requirements and templates
+• Integration with enterprise governance frameworks
+
+Knowledge Management and Best Practices
+• Centralized repositories for models, experiments, and documentation
+• Standardized templates and practices reduce onboarding time
+• Knowledge sharing platforms enable cross-team learning
+• Best practice guidelines and automated enforcement
+• Continuous improvement processes based on lessons learned
+
+2.6 STRATEGIC ADVANTAGES
+
+Long-term Competitive Benefits:
+• Systematic approach to machine learning enables sustained innovation
+• Data-driven culture supported by robust ML infrastructure
+• Ability to rapidly adapt to market changes and customer needs
+• Platform approach enables scaling ML across multiple business units
+• Foundation for advanced AI capabilities and future innovations
+
+The MLOps approach transforms machine learning from a series of one-off projects into a systematic, reliable, and scalable business capability that drives sustained competitive advantage and business value.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+[INSERT ARCHITECTURE DIAGRAM HERE]
+
+Figure 1: MLOps System Architecture for E-commerce Recommendation and Demand Forecasting
+(Create this diagram using the Architecture_Diagram_Guide.md instructions)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+[Continue with remaining sections...]
